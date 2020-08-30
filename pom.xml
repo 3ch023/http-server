@@ -29,7 +29,7 @@
                             <archive>
                                 <manifest>
                                     <mainClass>
-                                        com.lukianet.server.HttpServer
+                                        com.lukianet.server.Application
                                     </mainClass>
                                 </manifest>
                             </archive>
