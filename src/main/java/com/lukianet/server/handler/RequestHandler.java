@@ -13,8 +13,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.URLConnection;
 import lombok.AllArgsConstructor;
+import net.sf.jmimemagic.Magic;
+import net.sf.jmimemagic.MagicException;
+import net.sf.jmimemagic.MagicMatch;
+import net.sf.jmimemagic.MagicMatchNotFoundException;
+import net.sf.jmimemagic.MagicParseException;
 import org.apache.log4j.Logger;
 
 @AllArgsConstructor
@@ -31,6 +35,7 @@ public class RequestHandler implements Runnable {
   private static final String STATUS_500 = "500 Internal Server Error";
   private static final String MESSAGE_RESOURCE_NOT_FOUND = "Resource not found: ";
   private static final String MESSAGE_FAILED_TO_PROCESS_REQUEST = "Failed to process request.";
+  private static final String DEFAULT_CONTENT_TYPE = "text/plain";
   private RequestParser parser;
   private RequestValidator validator;
   private Socket client;
@@ -66,15 +71,25 @@ public class RequestHandler implements Runnable {
             STATUS_400, MESSAGE_RESOURCE_NOT_FOUND + request.getRequestURI());
       }
       Response response = new Response(STATUS_200);
-      String contentType = URLConnection.guessContentTypeFromStream(resource);
-      response.setContentType(contentType);
+      byte[] content = ByteStreams.toByteArray(resource);
+      response.setContentType(getContentType(content));
       if (METHOD_GET.equals(request.getMethod())) {
-        response.setContent(ByteStreams.toByteArray(resource));
+        response.setContent(content);
       }
       return response;
     } catch (IOException e) {
       return createErrorResponse(STATUS_500, MESSAGE_FAILED_TO_PROCESS_REQUEST);
     }
+  }
+
+  private String getContentType(byte[] content) {
+    try {
+      MagicMatch match = Magic.getMagicMatch(content);
+      return match.getMimeType();
+    } catch (MagicParseException | MagicMatchNotFoundException | MagicException e) {
+      LOG.error("Failed to get content type", e);
+    }
+    return DEFAULT_CONTENT_TYPE;
   }
 
   private InputStream getResource(final String resourcePath) {
