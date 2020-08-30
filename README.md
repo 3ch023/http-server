@@ -18,8 +18,8 @@ Make sure you build the project before running it in Intellij Idea or Eclipse. A
 
 ### Configuration
 
-The server will start on port 8081 by default. You can change this value in Application.java, DEFAULT_PORT constant.
-Served resources are packed within the jar. Configuring the Web Server root is not supported at the moment.
+The server will start on port 8081 by default. You can change this value in config.properties.
+Served resources are packed within the jar. Configuring the Web Server root is not supported.
 
 ### Limitations
 1. File types served are limited to the capabilities of URLConnection.guessContentTypeFromStream(is), so Web Server is not serving PDF, MS Word formats etc.

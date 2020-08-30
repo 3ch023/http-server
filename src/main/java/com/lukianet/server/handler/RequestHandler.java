@@ -50,7 +50,7 @@ public class RequestHandler implements Runnable {
       RequestValidationResult validationResult = validator.validate(request);
       Response response =
           validationResult == null
-              ? processRequest(output, request)
+              ? processRequest(request)
               : createErrorResponse(validationResult.getStatus(), validationResult.getMessage());
       sendResponse(output, response);
       client.close();
@@ -59,16 +59,16 @@ public class RequestHandler implements Runnable {
     }
   }
 
-  private Response processRequest(final OutputStream output, Request request) {
+  private Response processRequest(final Request request) {
     try (InputStream resource = getResource(request.getRequestURI())) {
       if (resource == null) {
         return createErrorResponse(
             STATUS_400, MESSAGE_RESOURCE_NOT_FOUND + request.getRequestURI());
       }
       Response response = new Response(STATUS_200);
+      String contentType = URLConnection.guessContentTypeFromStream(resource);
+      response.setContentType(contentType);
       if (METHOD_GET.equals(request.getMethod())) {
-        String contentType = URLConnection.guessContentTypeFromStream(resource);
-        response.setContentType(contentType);
         response.setContent(ByteStreams.toByteArray(resource));
       }
       return response;
@@ -88,11 +88,12 @@ public class RequestHandler implements Runnable {
     try {
       output.write(response.getStatusLine().getBytes());
       output.write((response.getContentTypeLine()).getBytes());
-      output.write(CRLF.getBytes());
-      output.write(response.getContent());
+      if (response.getContent() != null) {
+        output.write(CRLF.getBytes());
+        output.write(response.getContent());
+      }
       output.write((CRLF + CRLF).getBytes());
       output.flush();
-      // todo return headers
     } catch (IOException e) {
       LOG.error("Failed to send response", e);
     }
